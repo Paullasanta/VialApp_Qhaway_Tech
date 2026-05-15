@@ -276,16 +276,40 @@ const ReportScreen = ({ onNav }) => {
   const [photo, setPhoto] = useState(false);
   const [video, setVideo] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [aiLogs, setAiLogs] = useState([]);
+
+  const logSteps = [
+    {p: 10, text: "🔍 Cargando imagen en buffer..."},
+    {p: 25, text: "🧠 Inicializando modelo VialVision v2.1..."},
+    {p: 40, text: "🚗 Detectando vehículos y peatones..."},
+    {p: 55, text: "📐 Calculando distancias de seguridad..."},
+    {p: 70, text: "📋 Comparando con Reglamento Nacional (RNT)..."},
+    {p: 85, text: "⚠️ Evaluando nivel de riesgo crítico..."},
+    {p: 95, text: "✅ Generando veredicto legal..."},
+  ];
+
+  useEffect(() => {
+    if (step === "analyzing") {
+      const currentLog = logSteps.find(ls => progress >= ls.p && !aiLogs.includes(ls.text));
+      if (currentLog) {
+        setAiLogs(prev => [...prev, currentLog.text]);
+      }
+    }
+  }, [progress, step]);
 
   const analyze = () => {
     if (!comment) return;
     setStep("analyzing");
+    setAiLogs([]);
     let p = 0;
     const t = setInterval(() => {
-      p += 3;
+      p += 2;
       setProgress(p);
-      if (p >= 100) { clearInterval(t); setTimeout(() => onNav("result"), 400); }
-    }, 60);
+      if (p >= 100) { 
+        clearInterval(t); 
+        setTimeout(() => onNav("result"), 600); 
+      }
+    }, 80);
   };
 
   return (
@@ -297,21 +321,50 @@ const ReportScreen = ({ onNav }) => {
       </div>
 
       {step === "analyzing" ? (
-        <div style={{padding:24,textAlign:"center"}}>
-          <div style={{margin:"32px 0"}}>
-            <div style={{width:100,height:100,borderRadius:"50%",background:`linear-gradient(135deg, ${COLORS.blue}, ${COLORS.blueMid})`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto",boxShadow:`0 8px 32px ${COLORS.blue}55`}}>
-              <span style={{fontSize:44}}>🤖</span>
+        <div style={{padding:20,textAlign:"center"}}>
+          {/* Scanning Simulation Area */}
+          <div style={{position:"relative",width:"100%",height:220,background:"#000",borderRadius:20,overflow:"hidden",marginBottom:20,border:`2px solid ${COLORS.blue}55`}}>
+            <div className="scanner-line"/>
+            
+            {/* Mock Image for Scanning */}
+            <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",opacity:0.6}}>
+              <span style={{fontSize:80}}>🛵</span>
             </div>
-            <div style={{fontSize:18,fontWeight:800,color:COLORS.dark,marginTop:20}}>IA Analizando Situación…</div>
-            <div style={{fontSize:13,color:COLORS.gray,marginTop:6}}>Detectando tipo de infracción y nivel de riesgo</div>
-            <div style={{margin:"24px 0"}}>
-              <ProgressBar pct={progress} color={COLORS.blue} height={10}/>
-              <div style={{fontSize:12,color:COLORS.blue,fontWeight:700,marginTop:8}}>{progress}% completado</div>
+
+            {/* AI Bounding Boxes appearing at certain progress */}
+            {progress > 30 && (
+              <div className="ai-box" style={{top:"40%",left:"30%",width:120,height:80}}>
+                <div className="ai-label">MOTOTAXI ID: 442 [99%]</div>
+              </div>
+            )}
+            {progress > 60 && (
+              <div className="ai-box" style={{top:"65%",left:"10%",width:280,height:40,borderColor:COLORS.red,background:"rgba(239, 83, 80, 0.1)"}}>
+                <div className="ai-label" style={{background:COLORS.red}}>OBSTRUCCIÓN VEREDA [HIGH]</div>
+              </div>
+            )}
+
+            <div style={{position:"absolute",top:10,left:10,background:"rgba(0,0,0,0.6)",padding:"4px 8px",borderRadius:4,color:COLORS.green,fontSize:10,fontFamily:"monospace",textAlign:"left"}}>
+              {">"} SYSTEM_BOOT: OK<br/>
+              {">"} GPU_ACCEL: ACTIVE<br/>
+              {">"} VIAL_DB: CONNECTED
             </div>
-            <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
-              {["🔍 Leyendo imagen","⚠️ Clasificando riesgo","📋 Buscando norma","✅ Generando resultado"].map((s,i)=>(
-                <div key={i} style={{fontSize:11,background:progress>(i+1)*25?`${COLORS.greenLight}`:`${COLORS.grayLight}`,color:progress>(i+1)*25?COLORS.green:COLORS.gray,borderRadius:99,padding:"4px 10px",fontWeight:600,transition:"all 0.3s"}}>{s}</div>
+          </div>
+
+          <div style={{textAlign:"left",background:COLORS.dark,borderRadius:16,padding:16,boxShadow:"0 8px 32px rgba(0,0,0,0.2)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:COLORS.green,animation:"blink 1s infinite"}}/>
+              <span style={{fontSize:12,fontWeight:800,color:COLORS.white,letterSpacing:1}}>PROCESAMIENTO IA</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8,minHeight:140}}>
+              {aiLogs.map((log, i) => (
+                <div key={i} style={{fontSize:12,color:i === aiLogs.length-1 ? COLORS.blueMid : "rgba(255,255,255,0.6)",fontWeight:600,animation:"floatIn 0.3s ease-out"}}>
+                  {i === aiLogs.length-1 ? "➜ " : "✓ "} {log}
+                </div>
               ))}
+            </div>
+            <div style={{marginTop:16}}>
+              <ProgressBar pct={progress} color={COLORS.blue} height={6}/>
+              <div style={{textAlign:"right",fontSize:10,color:COLORS.gray,marginTop:4,fontWeight:700}}>{progress}%</div>
             </div>
           </div>
         </div>
@@ -542,20 +595,76 @@ const TriviaScreen = ({ onNav }) => {
 const GameScreen = ({ onNav }) => {
   const [phase, setPhase] = useState("scene"); // scene | question | result
   const [selected, setSelected] = useState(null);
+  const [timer, setTimer] = useState(100);
+  const [isPaused, setIsPaused] = useState(false);
+  
   const questions = [
-    {q:"¿Quién tiene la prioridad de paso?",opts:["El mototaxi","El peatón en cruce peatonal","El conductor que lleva apuro"],correct:1},
-    {q:"¿Qué debería hacer el conductor?",opts:["Acelerar y pasar rápido","Detenerse y ceder el paso","Tocar el claxon para avisar"],correct:1},
+    {
+      q:"¿Quién tiene la prioridad de paso?",
+      opts:["El mototaxi","El peatón en cruce peatonal","El conductor que lleva apuro"],
+      correct:1,
+      penalty: "Infracción G-10: No ceder el paso a peatones.",
+      fine: "S/ 396.00",
+      points: "-50 pts"
+    },
+    {
+      q:"¿Qué debería hacer el conductor?",
+      opts:["Acelerar y pasar rápido","Detenerse y ceder el paso","Tocar el claxon para avisar"],
+      correct:1,
+      penalty: "Infracción M-20: No respetar el cruce peatonal.",
+      fine: "S/ 594.00",
+      points: "-60 pts"
+    },
   ];
   const [qIdx, setQIdx] = useState(0);
   const [score, setScore] = useState(0);
+  const [showPenalty, setShowPenalty] = useState(false);
+
+  useEffect(() => {
+    let interval;
+    if (phase === "scene" && !isPaused) {
+      interval = setInterval(() => {
+        setTimer(prev => {
+          if (prev <= 0) {
+            clearInterval(interval);
+            handleTimeUp();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 50); // 5 seconds total
+    }
+    return () => clearInterval(interval);
+  }, [phase, isPaused]);
+
+  const handleTimeUp = () => {
+    setSelected(-1); // Timeout
+    setShowPenalty(true);
+    setIsPaused(true);
+  };
 
   const choose = (i) => {
+    if (selected !== null) return;
     setSelected(i);
-    if (i === questions[qIdx].correct) setScore(s => s + 20);
-    setTimeout(() => {
-      if (qIdx < questions.length - 1) { setQIdx(qi => qi+1); setSelected(null); }
-      else setPhase("result");
-    }, 900);
+    setIsPaused(true);
+    if (i === questions[qIdx].correct) {
+      setScore(s => s + 50);
+      setTimeout(() => next(), 1200);
+    } else {
+      setShowPenalty(true);
+    }
+  };
+
+  const next = () => {
+    if (qIdx < questions.length - 1) {
+      setQIdx(qi => qi+1);
+      setSelected(null);
+      setTimer(100);
+      setIsPaused(false);
+      setShowPenalty(false);
+    } else {
+      setPhase("result");
+    }
   };
 
   return (
@@ -568,6 +677,11 @@ const GameScreen = ({ onNav }) => {
           </div>
           <div style={{background:COLORS.yellow,borderRadius:12,padding:"6px 14px",fontWeight:800,fontSize:15,color:COLORS.dark}}>+{score} pts</div>
         </div>
+        {phase === "scene" && (
+          <div style={{marginTop:12,background:"rgba(255,255,255,0.1)",borderRadius:99,overflow:"hidden",height:6}}>
+            <div className="timer-bar" style={{width: `${timer}%`, background: timer < 30 ? COLORS.red : COLORS.yellow}}/>
+          </div>
+        )}
       </div>
 
       {phase === "result" ? (
@@ -588,7 +702,7 @@ const GameScreen = ({ onNav }) => {
       ) : (
         <div style={{padding:16}}>
           {/* Scene */}
-          <Card style={{marginBottom:12,padding:0,overflow:"hidden"}}>
+          <Card style={{marginBottom:12,padding:0,overflow:"hidden",position:"relative"}}>
             <div style={{background:"linear-gradient(180deg, #87CEEB 0%, #B0D8F0 40%, #8B7355 100%)",height:180,position:"relative",display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
               {/* Road */}
               <div style={{position:"absolute",bottom:0,left:0,right:0,height:70,background:"#555",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -597,23 +711,26 @@ const GameScreen = ({ onNav }) => {
               {/* Zebra crossing */}
               <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:60,height:70,background:"repeating-linear-gradient(90deg, white 0, white 8px, transparent 8px, transparent 16px)",opacity:0.8}}/>
               {/* Mototaxi */}
-              <div style={{position:"absolute",left:30,bottom:25,fontSize:32}}>🛵</div>
+              <div style={{position:"absolute",left:30,bottom:25,fontSize:32,transition:"transform 1s",transform:selected===1?"translateX(200px)":"none"}}>🛵</div>
               {/* Pedestrian */}
-              <div style={{position:"absolute",left:"50%",bottom:60,transform:"translateX(-50%)",fontSize:28}}>🚶</div>
+              <div style={{position:"absolute",left:"50%",bottom:60,transform:"translateX(-50%)",fontSize:28,animation:selected===1?"none":"blink 1s infinite"}}>🚶</div>
               {/* School sign */}
               <div style={{position:"absolute",right:16,bottom:70,fontSize:22}}>🏫</div>
-              {/* Danger indicator */}
-              <div style={{position:"absolute",top:10,right:10,background:COLORS.red,borderRadius:99,padding:"3px 8px",fontSize:11,fontWeight:800,color:COLORS.white}}>⚠️ ZONA ESCOLAR</div>
+              
+              {selected === 1 && <div style={{position:"absolute",top:"20%",fontSize:40,animation:"floatIn 0.5s forwards"}}>✅</div>}
+              {(selected === 0 || selected === 2 || selected === -1) && <div style={{position:"absolute",top:"20%",fontSize:40,animation:"floatIn 0.5s forwards"}}>❌</div>}
             </div>
             <div style={{padding:12,background:`${COLORS.yellowLight}`,display:"flex",gap:8,alignItems:"center"}}>
               <span style={{fontSize:18}}>ℹ️</span>
-              <div style={{fontSize:12,color:COLORS.dark,fontWeight:600}}>Mototaxi se aproxima a cruce peatonal en zona escolar a las 7:45 am. Peatón cruzando con luz verde.</div>
+              <div style={{fontSize:12,color:COLORS.dark,fontWeight:600}}>
+                {selected === -1 ? "¡SE ACABÓ EL TIEMPO! No tomaste una decisión." : "Mototaxi se aproxima a cruce peatonal. ¿Qué haces?"}
+              </div>
             </div>
           </Card>
 
           {/* Question */}
           <div style={{fontSize:15,fontWeight:800,color:COLORS.dark,marginBottom:12,lineHeight:1.4}}>
-            Pregunta {qIdx+1}/{questions.length}: {questions[qIdx].q}
+            Escenario {qIdx+1}/{questions.length}: {questions[qIdx].q}
           </div>
           {questions[qIdx].opts.map((opt, i) => {
             let bg = COLORS.white, border = COLORS.grayLight, textC = COLORS.dark;
@@ -632,6 +749,31 @@ const GameScreen = ({ onNav }) => {
               </button>
             );
           })}
+
+          {showPenalty && (
+            <div style={{marginTop:8,animation:"floatIn 0.4s ease-out"}}>
+              <Card style={{background:"#FFF9F9",border:`2px solid ${COLORS.red}`,padding:16}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                  <div style={{background:COLORS.red,color:COLORS.white,padding:"4px 12px",borderRadius:8,fontSize:12,fontWeight:900}}>PAPELETA VIRTUAL</div>
+                  <span style={{fontSize:14,fontWeight:800,color:COLORS.red}}>FALLO CRÍTICO</span>
+                </div>
+                <div style={{fontSize:15,fontWeight:800,color:COLORS.dark,marginBottom:4}}>{questions[qIdx].penalty}</div>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:12,background:"rgba(239, 83, 80, 0.05)",padding:10,borderRadius:10}}>
+                  <div>
+                    <div style={{fontSize:10,color:COLORS.gray,fontWeight:700}}>MULTA ESTIMADA</div>
+                    <div style={{fontSize:16,fontWeight:900,color:COLORS.red}}>{questions[qIdx].fine}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:10,color:COLORS.gray,fontWeight:700}}>PUNTOS LICENCIA</div>
+                    <div style={{fontSize:16,fontWeight:900,color:COLORS.red}}>{questions[qIdx].points}</div>
+                  </div>
+                </div>
+                <button onClick={next} style={{width:"100%",marginTop:16,background:COLORS.dark,color:COLORS.white,border:"none",borderRadius:12,padding:12,fontWeight:800,cursor:"pointer"}}>
+                  Reintentar siguiente escenario →
+                </button>
+              </Card>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -695,7 +837,7 @@ const RankingScreen = () => {
         <div style={{fontSize:15,fontWeight:800,color:COLORS.dark,marginBottom:10}}>🎖️ Insignias de la Semana</div>
         <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:8}}>
           {badges.map((b,i) => (
-            <div key={i} style={{minWidth:72,background:COLORS.white,borderRadius:16,padding:"12px 8px",textAlign:"center",boxShadow:"0 2px 10px rgba(0,0,0,0.07)",flexShrink:0,opacity:i<4?1:0.45}}>
+            <div key={i} style={{minWidth:72,background:COLORS.white,borderRadius:16,padding:"12px 8px",textAlign:"center",boxShadow:"0 2px 10px rgba(0,0,0,0.1)",flexShrink:0,opacity:i<4?1:0.45}}>
               <div style={{fontSize:26,marginBottom:4}}>{b.e}</div>
               <div style={{fontSize:10,fontWeight:700,color:COLORS.dark,lineHeight:1.2}}>{b.n}</div>
             </div>
@@ -877,7 +1019,7 @@ const MapScreen = () => {
 };
 
 // ===== MAIN APP =====
-export default function VialApp() {
+export default function App() {
   const [screen, setScreen] = useState("splash");
   const [splashDone, setSplashDone] = useState(false);
   const mainScreens = ["home","report","result","trivia","game","ranking","profile","map"];
@@ -907,6 +1049,61 @@ export default function VialApp() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { display: none; }
         button:active { opacity: 0.85; }
+
+        @keyframes scanLine {
+          0% { top: 0%; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+
+        @keyframes floatIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+
+        .scanner-line {
+          position: absolute;
+          left: 0;
+          width: 100%;
+          height: 3px;
+          background: ${COLORS.blue};
+          box-shadow: 0 0 15px ${COLORS.blue}, 0 0 5px ${COLORS.blue};
+          z-index: 10;
+          animation: scanLine 2s linear infinite;
+        }
+
+        .ai-box {
+          position: absolute;
+          border: 2px solid ${COLORS.blue};
+          background: rgba(21, 101, 192, 0.1);
+          border-radius: 4px;
+          animation: floatIn 0.5s ease-out both;
+        }
+
+        .ai-label {
+          position: absolute;
+          top: -20px;
+          left: -2px;
+          background: ${COLORS.blue};
+          color: white;
+          font-size: 9px;
+          padding: 2px 4px;
+          border-radius: 2px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .timer-bar {
+          height: 4px;
+          background: ${COLORS.red};
+          transition: width 0.1s linear;
+        }
       `}</style>
 
       {/* Phone frame */}
